@@ -1,0 +1,164 @@
+#include<iostream>
+#include<string>
+#include<map>
+#include<algorithm>
+#include<vector>
+using namespace std;
+
+map<char, int> chars;
+
+//compare function for sort
+bool Cmp(const char c1, const char c2)
+{
+	return chars[c1] < chars[c2];
+}
+
+//function to return the smallest search time with greedy algorithm
+int Huffman(char* pc, int N)
+{	
+	//sort the characters order by frequency ASC
+	sort(&pc[1], &pc[N+1], Cmp);
+	
+	map<char, int> Huffman;   //the length of Huffman code for each character
+	int* frequency = new int[N+2]; //use array to store frequency for combine trees
+	vector< vector<char> > root; //the roots in Huffman forest
+	
+	Huffman.clear();
+	root.clear();
+	vector<char> tmp;
+	root.push_back(tmp);
+	for(int i = 1; i <= N; i++)
+	{
+		vector<char> temp;
+		temp.clear();
+		root.push_back(temp);
+		
+		Huffman[pc[i]] = 0;  //initial length to be 0
+		frequency[i] = chars[ pc[i] ];
+		root[i].push_back( pc[i] );
+	}
+	
+	for(int i = 1; i <= N-1; i++) //combine N-1 times
+	{
+		vector<char>::iterator ite;
+		int newfre = 0;
+		
+		//combine two trees, then increase the length of code of all involved characters
+		//And calculate the frequency of new tree
+		for(ite = root[i+1].begin(); ite != root[i+1].end(); ite++)
+		{
+			newfre += chars[*ite];
+			Huffman[*ite]++;
+		}
+		for(ite = root[i].begin(); ite != root[i].end(); ite++)
+		{
+			newfre += chars[*ite];
+			Huffman[*ite]++;
+			root[i+1].push_back(*ite);  //combine trees
+		}
+		
+		//insert the new tree
+		int j;
+		for(j = i+2; j <= N ; j++)
+		{
+			if(frequency[j] < newfre)
+			{
+				//adjust frequency array
+				frequency[j-1] = frequency[j];
+				//adjust root vector
+				root[j-1].swap(root[j]);
+			}
+			else
+			    break;
+		}
+		frequency[j-1] = newfre;
+	}
+	
+	//calculate right answer
+	int right_answer = 0;
+	for(int i = 1; i <= N; i++)
+	    right_answer += chars[pc[i]] * Huffman[pc[i]];
+	
+	return right_answer;
+}
+
+int main()
+{
+	int N; //the number of distinct characters
+	cin >> N;
+	//int cases = 0; //record number of cases
+	//while(N != 0) //judge end of test cases
+	//{	
+		//cases++;
+		chars.clear();
+		
+		char* pc = new char[N+2];  //array used to store all the characters for later consturction of Huffman tree
+		//input characters and their frequency
+		for(int i = 1; i <= N; i++)
+		{
+			char c;
+			int frequency;
+			
+			cin >> c >> frequency;
+			//input character check
+			if( !(c>='0' && c<='9' || c>='a' && c<='z' || c>='A' && c<='Z' || c=='_' ) )
+			    cout << "illegal input" << endl;
+			
+			pc[i] = c;
+			chars[c] = frequency;
+		}
+		
+		int right_ans = Huffman(pc, N); //the smallest search time for all posible code in current case
+		
+		int M; //the number of student submissions
+		cin >> M;
+		
+		map<char, string> code;  //the coding of student submissions
+		map<char, string>::iterator it;
+		
+		//cout << "Case " << cases << ":" << endl;
+		//input M student submissions
+		for(int i = 1; i <= M; i++ )
+		{
+			int total = 0; //the total search time of all characters
+			bool flag = true; //the correctness of student answer
+			
+			code.clear();
+			for(int j = 1; j <= N; j++)
+			{
+				char c;
+				string s;
+				cin >> c;
+				cin >> s;
+				
+				//judge whether the answer code is ambigious
+				for(it = code.begin(); it != code.end(); it++)
+					if( s.find(it->second) == 0 || (it->second).find(s) == 0)
+					    break;
+				
+				//the answer code is ambigious because there is a string which is the former part of another one
+				if(it != code.end() )
+					flag = false;
+				
+				//add the code into code_map
+				code[c] = s;
+				//calculate current search time
+				total +=  chars[c] * s.length();
+			}
+			
+			if(flag == false)
+				cout << "No" << endl;
+			else
+			{
+				if(total == right_ans)
+				    cout << "Yes" << endl;
+				else
+				    cout << "No" << endl;
+			}
+		}
+		
+		//cin >> N;	
+	//}
+	
+	return 0;
+} 
